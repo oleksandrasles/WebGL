@@ -85,8 +85,25 @@ function draw() {
 }
 
 function CreateSurfaceData() {
-  
+    let vertexList = [];
+    let H = 1;
+    let c = 5;
+    let alpha = 0.033 * Math.PI;
+    let p = 8 * Math.PI;
+    let phi = 0;
+    let theta0 = 0
 
+  for (let u = 0; u < 1; u += 0.008) {
+      for (let v = -5; v < 5; v += 0.01) {
+          let theta = p * u + theta0
+          let x = c * u + v * (Math.sin(phi) + Math.tan(alpha) * Math.cos(phi) * Math.cos(theta))
+          let y = v * Math.tan(alpha) * Math.sin(theta)
+          let z = H + v * (Math.tan(alpha) * Math.cos(theta) - Math.cos(phi));
+          vertexList.push(x * 0.4, y * 0.4, z * 0.4);
+    }
+  }
+
+  return vertexList;
 }
 
 /* Initialize the WebGL context. Called from init() */
