@@ -85,7 +85,6 @@ function draw() {
 }
 
 function CreateSurfaceData() {
-
 }
 
 /* Initialize the WebGL context. Called from init() */
