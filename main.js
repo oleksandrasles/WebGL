@@ -98,7 +98,8 @@ function CreateSurfaceData() {
           let theta = p * u + theta0
           let x = c * u + v * (Math.sin(phi) + Math.tan(alpha) * Math.cos(phi) * Math.cos(theta))
           let y = v * Math.tan(alpha) * Math.sin(theta)
-          let z = H + v * (Math.tan(alpha) * Math.cos(theta) - Math.cos(phi));
+          let z = H + v * (Math.tan(alpha)* Math.sin(phi) * Math.cos(theta) - Math.cos(phi));
+
           vertexList.push(x * 0.3, y * 0.3, z * 0.3);
 
     }
