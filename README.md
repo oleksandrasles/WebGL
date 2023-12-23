@@ -2,4 +2,10 @@
 
 Project that accompanies VGGI credit module.
 
+Oleksandra Sles TR-31mp
+26. Twice oblique trochoid cylindroid
+![image](https://github.com/oleksandrasles/WebGL/assets/93182476/5b649ef0-428f-459d-8499-5d156be3161d)
+
+
+
 Visit vggi-kpi.blogspot.com for more information
