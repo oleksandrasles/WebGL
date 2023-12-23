@@ -6,9 +6,12 @@ Oleksandra Sles TR-31mp
 
 26. Twice oblique trochoid cylindroid
     
-![image](https://github.com/oleksandrasles/WebGL/assets/93182476/5b649ef0-428f-459d-8499-5d156be3161d)
+![image](https://github.com/oleksandrasles/WebGL/assets/93182476/e924ae79-ad4d-42f4-b7e5-ad3fc3deb956)
 
-![image](https://github.com/oleksandrasles/WebGL/assets/93182476/ddd967d0-994d-439d-80c9-f44c5fbefd82)
+![image](https://github.com/oleksandrasles/WebGL/assets/93182476/3e64284c-6f1e-4cee-b8e8-1b967d0ac0fa)
+
+
+
 
 
 
