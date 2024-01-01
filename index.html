@@ -17,15 +17,21 @@
 </head>
 <body onload="init()">
 
-<h2>Twice oblique trochoid cylindroid</h2>
+    <h2>Twice oblique trochoid cylindroid</h2>
 
-<p id="message">Drag your mouse on the cube to rotate it.<br>
-(On a touch screen, you can use your finger.)</p>
+    <p id="message">Drag your mouse on the cube to rotate it.<br>
+    (On a touch screen, you can use your finger.)</p>
+    <label for ="r">Red component of the figure color</label>
+    <input type ="range" name ="r" id="r" min="0" max="1" step="0.01" value="1">
+    <label for ="g">Green component of the figure color</label>
+    <input type ="range" name ="g" id="g" min="0" max="1" step="0.01" value="1">
+    <label for ="b">Blue component of the figure color</label>
+    <input type ="range" name ="b" id="b" min="0" max="1" step="0.01" value="0">
 
 
-<div id="canvas-holder">
-   <canvas width="1000" height="600" id="webglcanvas" style="background-color:red"></canvas>
-</div>
+    <div id="canvas-holder">
+    <canvas width="600" height="600" id="webglcanvas" style="background-color:red"></canvas>
+    </div>
 
 
 </body></html>

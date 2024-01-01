@@ -6,28 +6,40 @@ let shProgram; // A shader program
 let spaceball; // A SimpleRotator object that lets the user rotate the view by mouse.
 
 function deg2rad(angle) {
-  return (angle * Math.PI) / 180;
+  return angle * Math.PI / 180;
 }
 
 // Constructor
 function Model(name) {
   this.name = name;
   this.iVertexBuffer = gl.createBuffer();
+  this.iNormalBuffer = gl.createBuffer();
   this.count = 0;
 
-  this.BufferData = function (vertices) {
+  this.BufferData0 = function (vertices) {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
 
     this.count = vertices.length / 3;
   };
 
+  this.BufferData1 = function (normals) {
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STREAM_DRAW);
+
+}
+
   this.Draw = function () {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
     gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(shProgram.iAttribVertex);
 
-    gl.drawArrays(gl.LINE_STRIP, 0, this.count);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
+    gl.vertexAttribPointer(shProgram.iAttribNormal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(shProgram.iAttribNormal);
+
+    gl.drawArrays(gl.TRIANGLES, 0, this.count);
   };
 }
 
@@ -52,7 +64,7 @@ function ShaderProgram(name, program) {
  * (Note that the use of the above drawPrimitive function is not an efficient
  * way to draw with WebGL.  Here, the geometry is so simple that it doesn't matter.)
  */
-function draw() {
+function draw0() {
   gl.clearColor(0, 0, 0, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -79,32 +91,64 @@ function draw() {
   );
 
   /* Draw the six faces of a cube, with different colors. */
-  gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1]);
+  let r = document.getElementById('r').value
+  let g = document.getElementById('g').value
+  let b = document.getElementById('b').value
+  gl.uniform4fv(shProgram.iColor, [r, g, b, 1]);
 
   surface.Draw();
 }
 
-function CreateSurfaceData() {
+function draw1(){
+  draw0()
+  window.requestAnimationFrame(draw1)
+}
+
+function CreateSurfaceData(stepU = 0.008, stepV = 0.01) {
   let vertexList = [];
-  let H = 1;
-  let c = 5;
-  let alpha = 0.033 * Math.PI;
-  let p = 8 * Math.PI;
-  let phi = 0;
-  let theta0 = 0;
-
-  for (let u = 0; u < 1; u += 0.008) {
-      for (let v = -5; v < 5; v += 0.01) {
-          let theta = p * u + theta0
-          let x = c * u + v * (Math.sin(phi) + Math.tan(alpha) * Math.cos(phi) * Math.cos(theta))
-          let y = v * Math.tan(alpha) * Math.sin(theta)
-          let z = H + v * (Math.tan(alpha)* Math.sin(phi) * Math.cos(theta) - Math.cos(phi));
-
-          vertexList.push(x * 0.3, y * 0.3, z * 0.3);
-
+  let normalList = [];
+  const calcNormal = (u, v) => {
+    let d = 0.0001
+    let uv = getVertex(u, v)
+    let u1 = getVertex(u + d, v)
+    let v1 = getVertex(u, v + d)
+    let dU = [], dV = []
+    for (let i = 0; i < 3; i++){
+      dU.push((uv[i] - u1[i]) / d)
+      dV.push((uv[i] - v1[i]) / d)
+    }
+    let n = m4.cross(dU, dV)
+    return m4.normalize(n)
+  }
+  for (let u = 0; u < 1; u += stepU) {
+    for (let v = -5; v < 5; v += stepV) {
+      let v1 = getVertex(u, v)
+      let v2 = getVertex(u + stepU, v)
+      let v3 = getVertex(u, v + stepV)
+      let v4 = getVertex(u + stepU, v + stepV)
+      let n1 = calcNormal(u, v)
+      let n2 = calcNormal(u + stepU, v)
+      let n3 = calcNormal(u, v + stepV)
+      let n4 = calcNormal(u + stepU, v + stepV)
+      vertexList.push(
+        ...v1, ...v2, ...v3,
+        ...v3, ...v2, ...v4
+      );
+      normalList.push(
+        ...n1, ...n2, ...n3,
+        ...n3, ...n2, ...n4
+      );
     }
   }
-  return vertexList;
+  return [vertexList, normalList];
+}
+
+function getVertex(u, v, m = 0.3, H = 1, c = 5, alpha = 0.033 * Math.PI, p = 8 * Math.PI, phi = 0, theta0 = 0) {
+  let theta = p * u + theta0;
+  let x = c * u + v * (Math.sin(phi) + Math.tan(alpha) * Math.cos(phi) * Math.cos(theta));
+  let y = v * Math.tan(alpha) * Math.sin(theta);
+  let z = H + v * (Math.tan(alpha) * Math.sin(phi) * Math.cos(theta) - Math.cos(phi));
+  return [m * x, m * y, m * z]
 }
 
 /* Initialize the WebGL context. Called from init() */
@@ -115,6 +159,7 @@ function initGL() {
   shProgram.Use();
 
   shProgram.iAttribVertex = gl.getAttribLocation(prog, 'vertex');
+  shProgram.iAttribNormal = gl.getAttribLocation(prog, 'normal');
   shProgram.iModelViewProjectionMatrix = gl.getUniformLocation(
     prog,
     'ModelViewProjectionMatrix'
@@ -122,7 +167,9 @@ function initGL() {
   shProgram.iColor = gl.getUniformLocation(prog, 'color');
 
   surface = new Model('Surface');
-  surface.BufferData(CreateSurfaceData());
+  let data = CreateSurfaceData()
+  surface.BufferData0(data[0]);
+  surface.BufferData1(data[1]);
 
   gl.enable(gl.DEPTH_TEST);
 }
@@ -184,7 +231,7 @@ function init() {
     return;
   }
 
-  spaceball = new TrackballRotator(canvas, draw, 0);
+  spaceball = new TrackballRotator(canvas, draw0, 0);
 
-  draw();
+  draw1();
 }
