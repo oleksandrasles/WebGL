@@ -26,9 +26,10 @@ uniform vec4 color;
 varying vec3 v_Vertex;
 varying vec3 v_Normal;
 uniform vec3 diffuseColor;
+uniform vec3 lightDirection;
 void main() {
     vec3 N = normalize(v_Normal);
-    vec3 L = vec3(1.0,0.,1.);
+    vec3 L = normalize(lightDirection);
     float lambertian = max(dot(N,L), 0.0);
     float specular = 0.0;
     if (lambertian > 0.0){
@@ -41,4 +42,7 @@ void main() {
     vec3 specularColor = vec3(1);
     gl_FragColor = vec4(v_Normal,1.0);
     gl_FragColor = vec4(ambientColor + lambertian * color.xyz + specular * specularColor, 1.0);
+    if(color.a < 0.0){
+        gl_FragColor = vec4(1.0);
+    }
 }`;

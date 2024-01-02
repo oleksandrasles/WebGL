@@ -4,6 +4,7 @@ let gl; // The webgl context.
 let surface; // A surface model
 let shProgram; // A shader program
 let spaceball; // A SimpleRotator object that lets the user rotate the view by mouse.
+let lModel;
 
 function deg2rad(angle) {
   return angle * Math.PI / 180;
@@ -30,7 +31,7 @@ function Model(name) {
 
 }
 
-  this.Draw = function () {
+  this.Draw0 = function () {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
     gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(shProgram.iAttribVertex);
@@ -41,6 +42,15 @@ function Model(name) {
 
     gl.drawArrays(gl.TRIANGLES, 0, this.count);
   };
+
+  this.Draw1 = function (){
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
+    gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(shProgram.iAttribVertex);
+
+    gl.drawArrays(gl.LINE_STRIP, 0, this.count);
+  }
+
 }
 
 // Constructor
@@ -96,7 +106,18 @@ function draw0() {
   let b = document.getElementById('b').value
   gl.uniform4fv(shProgram.iColor, [r, g, b, 1]);
 
-  surface.Draw();
+  surface.Draw0();
+  gl.uniform4fv(shProgram.iColor, [r, g, b, -1]);
+  gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false,
+      m4.multiply(modelViewProjection,
+          m4.translation(0, 1, 0)
+      ));
+  let x = Math.sin(Date.now() * 0.001)
+  let z = Math.pow(x, 2);
+  gl.uniform3fv(shProgram.iLightDirection, [x, 1, z]);
+  lModel.BufferData0([0, 0, 0, ...m4.normalize([x, 1, z])])
+  lModel.Draw1();
+
 }
 
 function draw1(){
@@ -165,11 +186,14 @@ function initGL() {
     'ModelViewProjectionMatrix'
   );
   shProgram.iColor = gl.getUniformLocation(prog, 'color');
+  shProgram.iLightDirection = gl.getUniformLocation(prog, 'lightDirection');
 
   surface = new Model('Surface');
   let data = CreateSurfaceData()
   surface.BufferData0(data[0]);
   surface.BufferData1(data[1]);
+  lModel = new Model('lModel')
+  lModel.BufferData0([0, 0, 0, 1, 0, 1])
 
   gl.enable(gl.DEPTH_TEST);
 }
