@@ -3,16 +3,67 @@
 // Vertex shader
 const vertexShaderSource = `
 attribute vec3 vertex;
-attribute vec3 normal;
+attribute vec2 texture;
 uniform mat4 ModelViewProjectionMatrix;
-varying vec3 v_Vertex;
-varying vec3 v_Normal;
+varying vec2 v_Texture;
+uniform vec2 pModelT;
+uniform float r;
+
+mat4 translation(vec2 t) {
+    mat4 dst;
+
+    dst[0][0] = 1.0;
+    dst[0][ 1] = 0.0;
+    dst[0][ 2] = 0.0;
+    dst[0][ 3] = 0.0;
+    dst[1][ 0] = 0.0;
+    dst[1][ 1] = 1.0;
+    dst[1][ 2] = 0.0;
+    dst[1][ 3] = 0.0;
+    dst[2][ 0] = 0.0;
+    dst[2][ 1] = 0.0;
+    dst[2][ 2] = 1.0;
+    dst[2][ 3] = 0.0;
+    dst[3][ 0] = t.x;
+    dst[3][ 1] = t.y;
+    dst[3][ 2] = 0.0;
+    dst[3][ 3] = 1.0;
+
+    return dst;
+}
+
+mat4 rotation(float angleInRadians) {
+    mat4 dst;
+    float c = cos(angleInRadians);
+    float s = sin(angleInRadians);
+
+    dst[0][0] = c;
+    dst[0][ 1] = s;
+    dst[0][ 2] = 0.0;
+    dst[0][ 3] = 0.0;
+    dst[1][ 0] = -s;
+    dst[1][ 1] = c;
+    dst[1][ 2] = 0.0;
+    dst[1][ 3] = 0.0;
+    dst[2][ 0] = 0.0;
+    dst[2][ 1] = 0.0;
+    dst[2][ 2] = 1.0;
+    dst[2][ 3] = 0.0;
+    dst[3][ 0] = 0.0;
+    dst[3][ 1] = 0.0;
+    dst[3][ 2] = 0.0;
+    dst[3][ 3] = 1.0;
+
+    return dst;
+}
+
 void main() {
-    v_Vertex = mat3(ModelViewProjectionMatrix)*vertex;
-    v_Normal = normal;
+    vec4 m1= translation(-pModelT)*vec4(texture,0.,1.);
+    vec4 m2= rotation(r)*m1;
+    vec4 m3= translation(pModelT)*m2;
+    v_Texture = m3.st;
     gl_Position = ModelViewProjectionMatrix * vec4(vertex,1.0);
 }`;
-
 
 // Fragment shader
 const fragmentShaderSource = `
@@ -23,26 +74,12 @@ const fragmentShaderSource = `
 #endif
 
 uniform vec4 color;
-varying vec3 v_Vertex;
-varying vec3 v_Normal;
-uniform vec3 diffuseColor;
-uniform vec3 lightDirection;
+varying vec2 v_Texture;
+uniform sampler2D tmu;
 void main() {
-    vec3 N = normalize(v_Normal);
-    vec3 L = normalize(lightDirection);
-    float lambertian = max(dot(N,L), 0.0);
-    float specular = 0.0;
-    if (lambertian > 0.0){
-        vec3 R = reflect(-L, N);
-        vec3 V = normalize(-v_Vertex);
-        float specAngle = max(dot(R, V), 0.0);
-        specular = pow(specAngle, 10.0);
-    }
-    vec3 ambientColor = vec3(0.1);
-    vec3 specularColor = vec3(1);
-    gl_FragColor = vec4(v_Normal,1.0);
-    gl_FragColor = vec4(ambientColor + lambertian * color.xyz + specular * specularColor, 1.0);
-    if(color.a < 0.0){
+    vec4 colorT = texture2D(tmu, v_Texture);
+    gl_FragColor = colorT;
+    if(color.a<0.0){
         gl_FragColor = vec4(1.0);
     }
 }`;

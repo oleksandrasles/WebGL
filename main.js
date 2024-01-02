@@ -4,7 +4,7 @@ let gl; // The webgl context.
 let surface; // A surface model
 let shProgram; // A shader program
 let spaceball; // A SimpleRotator object that lets the user rotate the view by mouse.
-let lModel;
+let pModel, pModelT = [0.5, 0.5];
 
 function deg2rad(angle) {
   return angle * Math.PI / 180;
@@ -14,7 +14,7 @@ function deg2rad(angle) {
 function Model(name) {
   this.name = name;
   this.iVertexBuffer = gl.createBuffer();
-  this.iNormalBuffer = gl.createBuffer();
+  this.iTextureBuffer = gl.createBuffer();
   this.count = 0;
 
   this.BufferData0 = function (vertices) {
@@ -24,32 +24,24 @@ function Model(name) {
     this.count = vertices.length / 3;
   };
 
-  this.BufferData1 = function (normals) {
+  this.BufferData1 = function (textures) {
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STREAM_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iTextureBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textures), gl.STREAM_DRAW);
 
 }
 
-  this.Draw0 = function () {
+  this.Draw = function () {
     gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
     gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(shProgram.iAttribVertex);
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.iNormalBuffer);
-    gl.vertexAttribPointer(shProgram.iAttribNormal, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(shProgram.iAttribNormal);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.iTextureBuffer);
+    gl.vertexAttribPointer(shProgram.iAttribTexture, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(shProgram.iAttribTexture);
 
     gl.drawArrays(gl.TRIANGLES, 0, this.count);
   };
-
-  this.Draw1 = function (){
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
-    gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(shProgram.iAttribVertex);
-
-    gl.drawArrays(gl.LINE_STRIP, 0, this.count);
-  }
 
 }
 
@@ -102,21 +94,17 @@ function draw0() {
 
   /* Draw the six faces of a cube, with different colors. */
   let r = document.getElementById('r').value
-  let g = document.getElementById('g').value
-  let b = document.getElementById('b').value
-  gl.uniform4fv(shProgram.iColor, [r, g, b, 1]);
-
-  surface.Draw0();
-  gl.uniform4fv(shProgram.iColor, [r, g, b, -1]);
-  gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false,
-      m4.multiply(modelViewProjection,
-          m4.translation(0, 1, 0)
-      ));
-  let x = Math.sin(Date.now() * 0.001)
-  let z = Math.pow(x, 2);
-  gl.uniform3fv(shProgram.iLightDirection, [x, 1, z]);
-  lModel.BufferData0([0, 0, 0, ...m4.normalize([x, 1, z])])
-  lModel.Draw1();
+  console.log(r)
+  gl.uniform1f(shProgram.iR, r);
+  gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1]);
+  gl.uniform2fv(shProgram.iPT, pModelT);
+  surface.Draw();
+  gl.uniform4fv(shProgram.iColor, [1, 1, 0, -1]);
+  gl.uniformMatrix4fv(shProgram.iModelViewProjectionMatrix, false, m4.multiply(
+      modelViewProjection,
+      m4.translation(...getVertex(pModelT[0], mapRange(pModelT[1], 0, 1, -5, 5)))
+  ));
+  pModel.Draw();
 
 }
 
@@ -128,6 +116,7 @@ function draw1(){
 function CreateSurfaceData(stepU = 0.008, stepV = 0.01) {
   let vertexList = [];
   let normalList = [];
+  let textureList = [];
   const calcNormal = (u, v) => {
     let d = 0.0001
     let uv = getVertex(u, v)
@@ -159,9 +148,19 @@ function CreateSurfaceData(stepU = 0.008, stepV = 0.01) {
         ...n1, ...n2, ...n3,
         ...n3, ...n2, ...n4
       );
+      textureList.push(
+        u, mapRange(v, -5, 5, 0, 1), u + stepU, mapRange(v, -5, 5, 0, 1), u, mapRange(v + stepV, -5, 5, 0, 1),
+        u, mapRange(v + stepV, -5, 5, 0, 1), u + stepU, mapRange(v, -5, 5, 0, 1), u + stepU, mapRange(v + stepV, -5, 5, 0, 1),
+    )
     }
   }
-  return [vertexList, normalList];
+  return [vertexList, normalList, textureList];
+}
+
+function mapRange(value, a, b, c, d) {
+  value = (value - a) / (b - a);
+
+  return c + value * (d - c);
 }
 
 function getVertex(u, v, m = 0.3, H = 1, c = 5, alpha = 0.033 * Math.PI, p = 8 * Math.PI, phi = 0, theta0 = 0) {
@@ -180,22 +179,58 @@ function initGL() {
   shProgram.Use();
 
   shProgram.iAttribVertex = gl.getAttribLocation(prog, 'vertex');
-  shProgram.iAttribNormal = gl.getAttribLocation(prog, 'normal');
+  shProgram.iAttribTexture = gl.getAttribLocation(prog, "texture");
   shProgram.iModelViewProjectionMatrix = gl.getUniformLocation(
     prog,
     'ModelViewProjectionMatrix'
   );
   shProgram.iColor = gl.getUniformLocation(prog, 'color');
-  shProgram.iLightDirection = gl.getUniformLocation(prog, 'lightDirection');
+  shProgram.iR = gl.getUniformLocation(prog, "r");
+  shProgram.iPT = gl.getUniformLocation(prog, "pModelT");
 
   surface = new Model('Surface');
   let data = CreateSurfaceData()
   surface.BufferData0(data[0]);
-  surface.BufferData1(data[1]);
-  lModel = new Model('lModel')
-  lModel.BufferData0([0, 0, 0, 1, 0, 1])
+  surface.BufferData1(data[2]);
+  pModel = new Model('pModel')
+  let pData = CreateSphereData()
+  pModel.BufferData0(pData);
+  pModel.BufferData1(pData);
 
   gl.enable(gl.DEPTH_TEST);
+}
+
+function CreateSphereData() {
+  let vertexList = [];
+
+  let u = 0,
+      t = 0;
+  while (u < Math.PI * 2) {
+      while (t < Math.PI) {
+          let v = getSphereVertex(u, t);
+          let w = getSphereVertex(u + 0.1, t);
+          let wv = getSphereVertex(u, t + 0.1);
+          let ww = getSphereVertex(u + 0.1, t + 0.1);
+          vertexList.push(v.x, v.y, v.z);
+          vertexList.push(w.x, w.y, w.z);
+          vertexList.push(wv.x, wv.y, wv.z);
+          vertexList.push(wv.x, wv.y, wv.z);
+          vertexList.push(w.x, w.y, w.z);
+          vertexList.push(ww.x, ww.y, ww.z);
+          t += 0.1;
+      }
+      t = 0;
+      u += 0.1;
+  }
+  return vertexList
+}
+const radius = 0.05;
+function getSphereVertex(long, lat) {
+  return {
+      x: radius * Math.cos(long) * Math.sin(lat),
+      y: radius * Math.sin(long) * Math.sin(lat),
+      z: radius * Math.cos(lat)
+  }
 }
 
 /* Creates a program for use in the WebGL context gl, and returns the
@@ -233,6 +268,20 @@ function createProgram(gl, vShader, fShader) {
  * initialization function that will be called when the page has loaded
  */
 function init() {
+  window.onkeydown = (e) => {
+    if (e.keyCode == 87) {
+        pModelT[0] = Math.min(pModelT[0] + 0.01, 1);
+    }
+    else if (e.keyCode == 83) {
+        pModelT[0] = Math.max(pModelT[0] - 0.01, 0);
+    }
+    else if (e.keyCode == 68) {
+        pModelT[1] = Math.min(pModelT[1] + 0.01, 1);
+    }
+    else if (e.keyCode == 65) {
+        pModelT[1] = Math.max(pModelT[1] - 0.01, 0);
+    }
+  }
   let canvas;
   try {
     canvas = document.getElementById('webglcanvas');
@@ -256,6 +305,21 @@ function init() {
   }
 
   spaceball = new TrackballRotator(canvas, draw0, 0);
-
+  LoadTexture()
   draw1();
+}
+
+function LoadTexture() {
+  let texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  const image = new Image();
+  image.crossOrigin = 'anonymus';
+  image.src = " ";
+  image.onload = () => {
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      console.log("texture loaded")
+  }
 }
