@@ -13,6 +13,11 @@ PA1
 
 PA2
 
+![PA2](https://github.com/oleksandrasles/WebGL/assets/93182476/881e4a2a-d2db-470f-b9e7-77f084dee7cd)
+
+PA3
+
+![PA3](https://github.com/oleksandrasles/WebGL/assets/93182476/1c3228a5-4173-4b5c-b93f-f9bc125fb90f)
 
 
 
