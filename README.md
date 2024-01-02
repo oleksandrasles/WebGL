@@ -20,4 +20,5 @@ PA3
 ![PA3](https://github.com/oleksandrasles/WebGL/assets/93182476/1c3228a5-4173-4b5c-b93f-f9bc125fb90f)
 
 
+
 Visit vggi-kpi.blogspot.com for more information
